@@ -1,0 +1,40 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# ResNet-34-style baseline for Chagas disease detection from 12-lead ECGs
+# PhysioNet / Computing in Cardiology Challenge 2025
+# ──────────────────────────────────────────────────────────────────────────────
+
+# ── Paths ─────────────────────────────────────────────────────────────────────
+# Adjust these to point at your local PhysioNet data directories.
+data:
+  train_dir: "data/train"
+  val_dir: "data/val"
+
+# ── Signal preprocessing ─────────────────────────────────────────────────────
+preprocessing:
+  target_fs: 500           # target sampling frequency (Hz)
+  target_duration_s: 10    # ECG duration after pad/truncate (seconds)
+  filter_low: 0.5          # bandpass low-cut (Hz)  – removes baseline wander
+  filter_high: 47.0        # bandpass high-cut (Hz) – removes powerline + EMG
+
+# ── Model architecture ───────────────────────────────────────────────────────
+model:
+  in_channels: 12           # number of ECG leads
+  base_filters: 64          # first-layer filter count; doubles per group
+  num_blocks_per_group: 2   # residual blocks per group (4 groups total)
+  kernel_size: 7            # convolution kernel width
+  dropout: 0.3              # dropout probability in residual blocks
+
+# ── Training ──────────────────────────────────────────────────────────────────
+training:
+  epochs: 50
+  batch_size: 32
+  lr: 1.0e-3                # initial learning rate (AdamW)
+  weight_decay: 1.0e-4      # L2 regularisation
+  pos_weight: 10.0          # BCE positive-class weight (≈ 1/prevalence)
+  patience: 10              # early-stopping patience (epochs)
+  num_workers: 4            # DataLoader workers
+
+# ── Output ────────────────────────────────────────────────────────────────────
+output:
+  checkpoint_dir: "checkpoints"
+  log_dir: "logs"

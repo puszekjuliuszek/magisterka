@@ -1,0 +1,29 @@
+\appendix
+
+\chapter{Approach 13: ECGFounder + Interpretable Classifier --- Source Listing}
+\label{app:approach13}
+
+This appendix reproduces the source of the unexecuted
+\texttt{approach13\_ecgfounder\_interpretable.ipynb} notebook
+discussed in Section~\ref{sec:incomplete}. The notebook is also
+available in the thesis repository at
+\url{https://github.com/puszekjuliuszek/magisterka}. Only cells~1--3
+executed during development (library imports and the ECGFounder
+model load); the subsequent cells covering data loading, feature
+extraction, XGBoost and logistic-regression training, evaluation, and
+SHAP analysis are reproduced here unchanged. They were never run,
+so no quantitative results are attached to this approach.
+
+\lstdefinelanguage{PythonPlain}{}
+\lstset{
+    language=PythonPlain,
+    basicstyle=\ttfamily\scriptsize,
+    breaklines=true,
+    columns=fullflexible,
+    keepspaces=true,
+    showstringspaces=false,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny\color{gray}
+}
+\lstinputlisting{tex/approach13_code.py}

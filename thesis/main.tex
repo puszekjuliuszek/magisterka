@@ -1,0 +1,221 @@
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ %
+ %	Name			:: 	The official template for the typesetting of diploma theses at the Faculty of Computer Science of AGH University of Krakow
+ %	Author			:: 	Stanisław Polak (polak[aT]icsr[DoT]agh[DoT]edu[DoT]pl)
+ %	Created			::	2024-02-14
+ %	Modified	    ::	2024-06-13
+ %	Version			:: 	1.3.2
+ %	Email			:: 	polak[aT]icsr[DoT]agh[DoT]edu[DoT]pl
+ %	Website			:: 	http://www.icsr.agh.edu.pl/~polak/
+ %   Youtube         ::  https://www.youtube.com/user/spolak69
+ %   Github          ::  https://github.com/polaksta
+ %	License			:: 	This work may be distributed and/or modified under the
+ %                       conditions of the LaTeX Project Public License, either version 1.3
+ %                       of this license or (at your option) any later version.
+ %                       The latest version of this license is in
+ %                       http://www.latex-project.org/lppl.txt
+ %                       and version 1.3 or later is part of all distributions of LaTeX
+ %                       version 2005/12/01 or later.
+ %
+ %	Description		::	This document is a demonstration of the template
+ %
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % Niniejszy dokument — szkielet pracy dyplomowej — prezentuje przykłady użycia klasy 'agh-wi' oraz pakietów tradycyjnie używanych w pracach
+ % dyplomowych z informatyki. Dla kilku z nich, wartości początkowe parametrów konfiguracyjnych są zdefiniowane 
+ % w klasie  — wartości te uwzględniają uwagi osób prowadzących przedmiot "Pracownia Dyplomowa". 
+ % Oczywiście możesz używać dowolnych pakietów, niekoniecznie tych, które są pokazane w tym dokumencie
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % Poniższe uwagi NIE DOTYCZĄ Overleaf-a
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % W tej przykładowej pracy dyplomowej użyto, między innymi, pakietów:
+ %   - "minted", co oznacza, że musisz uruchomić kompilator z opcją '-shell-escape'
+ %   - "biblatex", co oznacza, że po kompilacji (dokumentu) musisz, jeszcze, wygenerować plik '.bbl'
+ %   - "nomencl", co oznacza, że za pomocą komendy 'makeindex' musisz wygenerować wykaz symboli
+ %
+ % Tak więc, w celu wygenerowania wynikowego dokumentu PDF, musisz wykonać następujące komendy:
+ %       pdflatex -shell-escape example
+ %       biber example
+ %       makeindex example.nlo  -s nomencl.ist -o example.nls
+ %       pdflatex -shell-escape example
+ %       pdflatex -shell-escape example
+ %
+ % Dodatkowo musisz mieć zainstalowany program 'pygmentize', który jest częścią pakietu "Pygments" (https://pygments.org/)
+ % Ww. programy powinny zainstalować się automatycznie podczas instalacji pakietów LaTeX
+ %
+ % Jeżeli masz zainstalowany program 'latexmk', to możesz wygenerować dokument PDF następująco:
+ %       latexmk example
+ %       makeindex example.nlo  -s nomencl.ist -o example.nls
+ %       latexmk example
+ %
+ % Do edycji (oraz komplilacji) dokumentów LaTeX polecam program 'TeXstudio' (https://www.texstudio.org/)
+ %
+ % Autor: Stanisław Polak <polak[aT]agh[DoT]edu[DoT]pl>
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \documentclass{agh-wi} % Praca po polsku; na stronie tytułowej, najpierw jest widoczny polskojęzyczny tytuł, a potem angielskojęzyczny.
+                       % Kierunek 'Informatyka'.
+                       % Przeznaczona do oglądania przy użyciu przeglądarki PDF.
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % Inne, przykładowe, użycia klasy
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \documentclass[english]{agh-wi}     % Praca po angielsku; 
+                                       %     strona tytułowa po polsku, ale najpierw jest widoczny angielskojęzyczny tytuł, a potem polskojęzyczny.  
+                                       % Kierunek 'Informatyka'.
+                                       % Przeznaczona do oglądania przy użyciu przeglądarki PDF.
+ % \documentclass[english, ds]{agh-wi} % Praca po angielsku; ...
+                                       % Kierunek 'Informatyka - Data Science'.
+                                       % Przeznaczona do oglądania przy użyciu przeglądarki PDF.
+ % \documentclass[umisi]{agh-wi}       % Praca po polsku; ...
+                                       % Kierunek 'Informatyka - Uczenie Maszynowe i Sztuczna Inteligencja'.
+                                       % Przeznaczona do oglądania przy użyciu przeglądarki PDF.
+ % \documentclass[print]{agh-wi}       % Praca po polsku; ...
+                                       % Kierunek 'Informatyka'.
+                                       % Przeznaczona do drukowania - każda strona posiada,
+                                       %    dodatkowy (2cm), margines na oprawę.
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % Parametry dla strony tytułowej
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\titlePL{Automatyczna klasyfikacja choroby Chagasa na podstawie sygnałów elektrokardiograficznych }  % Tytuł po polsku
+\titleEN{Automatic classification of Chagas disease based on electrocardiogram signals} % Tytuł po angielsku
+\author{Juliusz Antoni Wasieleski}
+\supervisor{dr. inż. Szymon Sieciński}
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % Pakiety
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % Podstawowe — na pewno będziesz ich potrzebował(a) w swojej wersji pracy dyplomowej
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{polski} % Obsługa języka polskiego
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % Dodatkowe — niekoniecznie będziesz ich potrzebował(a) w swojej wersji pracy dyplomowej
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage[sorting=none]{biblatex}           % Spis literatury ma być tworzony na podstawie zawartości bibliograficznej bazy danych
+\usepackage{amsmath}                          % Dodatkowe środowiska matematyczne
+\usepackage{amssymb}                          % Dodatkowe symbole matematyczne
+\usepackage[polish, intoc]{nomencl}           % Definiowanie symboli
+\usepackage{graphicx}                         % Wstawianie grafik zewnętrznych
+\usepackage{xcolor}                           % Kolorowy tekst
+\usepackage{tabularx}                         % Rozszerzona wersja środowiska 'tabular'
+\usepackage{longtable}                        % Skład "długich" tabel
+\usepackage[ruled,linesnumbered]{algorithm2e} % Algorytmy w formie pseudokodu
+\usepackage{listings}                         % Formatowanie kodów źródłowych programów
+\usepackage[newfloat]{minted}                 % Formatowanie kodów źródłowych programów
+\usepackage{hyperref}                         % Obsługa adresów URL — zbędny jeżeli używasz 'biblatex'
+\usepackage{csquotes}                         % Polskie cudzysłowy — rekomendowany jeżeli używasz 'biblatex'
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ %  % Konfiguracja rysunków TikZ
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usetikzlibrary{shapes.geometric,arrows.meta,positioning,calc}
+\tikzstyle{every picture}+=[remember picture]
+\tikzstyle{na} = [baseline=-.5ex]
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % Ładowanie danych bibliograficznych
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\addbibresource{bibliography.bib}
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % Opcje konfiguracyjne pakietów
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % Pakiet 'framed'
+\definecolor{shadecolor}{gray}{0.9}
+ % Pakiet 'nomencl'
+\makenomenclature % Otwórz plik 'example.nlo'
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % Definicje komend
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\alert}[1]{\colorbox{red!50}{#1}}
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % Twierdzenia i podobne struktury
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newtheorem{theorem}{Twierdzenie}
+\newtheorem{definition}{Definicja}
+
+\newcounter{comment}[chapter]
+\newenvironment{comment}[1][]{\begin{shaded}\refstepcounter{comment}
+   \noindent \textbf{Uwaga~\thechapter.\thecomment. #1} \rmfamily}{\end{shaded}}
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % Treść poszczególnych rozdziałów tej, przykładowej, pracy dyplomowej 
+ %   znajduje się w osobnych plikach (patrz  katalog 'tex') 
+ %   i jest dołączana, do bieżącego pliku, komendą \include. 
+ % Tworząc pracę, z reguły, zajmujesz się edycją 
+ %   tylko jednego rozdziału. 
+ % Aby skrócić czas kompilacji warto, za pomocą komendy \includeonly, 
+ %   włączyć kompilację tylko tego pliku (rozdziału) nad którym, aktualnie, pracujesz
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % \includeonly{tex/example,tex/notes} % Kompiluj, tylko, treść wymienionych plików, tj. 'tex/example.tex' oraz 'tex/notes.tex'.
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\frontmatter % Część wstępna
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\maketitle % Dodaj stronę tytułową
+ %%%%%%%%%%%%%%%%%%%%%%%
+ % Jeżeli chcesz komuś podziękować, to możesz użyć poniższego kodu
+% \cleardoublepage
+% \thispagestyle{empty}
+% \vspace*{\fill}
+% \begin{flushright}
+%     \em
+%     \begin{minipage}{0.75\textwidth}
+%         Tutaj możesz umieścić treść podziękowań.
+%         Tutaj możesz umieścić treść podziękowań.
+%         Tutaj możesz umieścić treść podziękowań.
+%         Tutaj możesz umieścić treść podziękowań.
+%         Tutaj możesz umieścić treść podziękowań.
+%     \end{minipage}
+% \end{flushright}
+ %%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstractPL}
+    Choroba Chagasa, wywoływana przez pasożyta Trypanosoma cruzi, stanowi poważny problem zdrowotny w Ameryce Łacińskiej i jest coraz częściej rozpoznawana w innych regionach ze względu na migrację. Zajęcie serca, które można wykryć na podstawie nieprawidłowości w elektrokardiogramie (EKG), jest jednym z najpoważniejszych powikłań, jednak jego wczesna identyfikacja pozostaje trudna. Celem niniejszej pracy jest rozwiązanie tego problemu poprzez dostarczenie narzędzia obliczeniowego do automatycznego wykrywania zmian związanych z chorobą Chagasa w sygnałach EKG.
+
+W pracy zbadano systematyczny program szesnastu podejść do automatycznego wykrywania choroby Chagasa, ocenianych na zbiorach danych CODE-15\% oraz SaMi-Trop z konkursu „Detection of Chagas Disease from the ECG: The George B. Moody PhysioNet Challenge 2025”. Badane podejścia obejmują bazowe klasyfikatory 1-D ResNet, generatywną augmentację danych za pomocą modeli dyfuzyjnych, sieci neuronowe informowane fizyką oparte na modelach Alieva-Panfilova i McSharry'ego oraz samonadzorowane modele fundamentalne EKG. Wszystkie eksperymenty przeprowadzono na sprzęcie konsumenckim Apple M3, co czyni pracę studium przypadku w nurcie Green AI.
+Najlepszy model dyfuzyjny informowany fizyką osiągnął wynik Challenge Score (czułość przy 5\% odsetku fałszywie dodatnich) równy 0,2289, natomiast dostrojony model samonadzorowany uzyskał najwyższe AUROC w rozkładzie zgodnym z treningiem, równe 0,8593. Wyniki rozchodzą się przy generalizacji: model o najwyższym AUROC całkowicie zawiódł na kohorcie SaMi-Trop spoza rozkładu treningowego (czułość 0,0000), podczas gdy autoenkoder fenomenologiczny o niższym AUROC odzyskał 99,45\% tej kohorty po jednej korekcie progu decyzyjnego. AUROC błędnie szereguje zatem modele dla klinicznego zadania przesiewowego, a kryteria oceny powinny być dostosowane do warunków spoza rozkładu treningowego.
+\end{abstractPL}
+\begin{abstractEN}
+    Chagas disease, caused by the parasite Trypanosoma cruzi, is a major health concern in Latin America and is increasingly recognized in other regions due to migration. Cardiac involvement, which can be detected through electrocardiogram (ECG) abnormalities, is one of the most serious complications, yet its early identification remains challenging. The aim of this thesis is to address this issue by providing a computational tool for the automatic detection of Chagas-related changes in ECG signals.
+
+This thesis investigates a systematic program of sixteen approaches to automated Chagas detection, evaluated on the CODE-15\% and SaMi-Trop datasets of the "Detection of Chagas Disease from the ECG: The George B. Moody PhysioNet Challenge 2025". The approaches span baseline 1-D ResNet classifiers, generative data augmentation with diffusion models, physics-informed neural networks based on the Aliev-Panfilov and McSharry models, and self-supervised ECG foundation models. All experiments were conducted on consumer-grade Apple M3 hardware, framing the work as a Green-AI case study.
+The strongest physics-guided diffusion model reached a Challenge Score (true positive rate at 5\% false positive rate) of 0.2289, while a fine-tuned self-supervised model achieved the highest in-distribution AUROC of 0.8593. The two rankings diverge under generalization: the model with the highest AUROC failed entirely on the out-of-distribution SaMi-Trop cohort (0.0000 sensitivity), whereas a lower-AUROC phenomenological autoencoder recovered 99.45\% of that cohort after a single decision-threshold adjustment. AUROC therefore misranks models for the clinical screening task, and evaluation criteria should be aligned with out-of-distribution deployment.
+\end{abstractEN}
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % AI-tool usage declaration
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\cleardoublepage
+\thispagestyle{empty}
+\vspace*{\fill}
+\begin{center}
+\begin{minipage}{0.8\textwidth}
+\begin{center}\textbf{Declaration on the use of AI tools}\end{center}
+\noindent In the preparation of the text of this master's thesis, AI-powered linguistic tools were used to improve the clarity and coherence of the manuscript and ensure its stylistic and grammatical correctness.
+
+\medskip
+\noindent However, the content, ideas, research findings, and conclusions presented herein are solely the author's own.
+\end{minipage}
+\end{center}
+\vspace*{\fill}
+\cleardoublepage
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\tableofcontents   % Wygeneruj spis treści
+\listoffigures     % Wygeneruj listę rysunków
+\listoftables      % Wygeneruj listę tabel
+\include{tex/abbreviations} % Wykaz skrótów
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\mainmatter % Część główna
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % Rozdziały części głównej
+\include{tex/introduction}
+\include{tex/sota}
+\include{tex/research}
+\include{tex/conclusions}
+\include{tex/appendix_approach13}
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\backmatter % Część końcowa
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ % UWAGA: Jeżeli będziesz tworzyć spis literatury ręcznie, tj. za pomocą otoczenia 
+ %  'thebibliography', to pamiętaj — powinien zawierać tylko te publikacje, 
+ %  do których odwołujesz się w pracy. 
+
+\printbibliography  % Wyświetl spis literatury
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{document}

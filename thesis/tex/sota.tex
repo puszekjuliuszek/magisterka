@@ -1,0 +1,328 @@
+\chapter{State of the art}
+\label{chap:sota}
+
+This chapter surveys computational methods for automated ECG-based Chagas detection, from traditional feature engineering through deep learning to the four directions evaluated in this thesis: generative augmentation, physics-informed networks, self-supervised learning, and ECG foundation models.
+
+\section{Traditional Machine Learning Approaches}
+
+Before deep learning, ECG classification was built on a two-stage pipeline: extract a fixed set of expert-designed features, then feed them to a classifier. The subsections below cover both halves of that pipeline and the performance ceiling it imposes, which together explain why this paradigm remains a sensible baseline for small, low-resource Chagas disease screening tasks, even after neural networks took over the field.
+
+\subsection{Feature Engineering Paradigm}
+
+Traditional machine learning approaches to ECG classification rely on expert-designed feature extraction followed by classical algorithms. This pipeline dominated cardiac signal processing before deep learning and still outperforms neural networks when labeled data is scarce.
+
+\subsubsection{Hand-Crafted Features}
+
+Feature extraction typically encompasses multiple domains:
+
+\begin{itemize}
+    \item \textbf{Temporal Features:} RR intervals, PR duration, QRS duration, QT interval, QTc (corrected)
+    \item \textbf{Morphological Features:} P, Q, R, S, T wave amplitudes; QRS axis; ST-segment deviation
+    \item \textbf{Heart Rate Variability:} SDNN, RMSSD, pNN50, power spectral density in VLF/LF/HF bands
+    \item \textbf{Frequency Domain:} Fourier transform coefficients, dominant frequencies
+    \item \textbf{Time-Frequency:} Wavelet transform coefficients capturing multi-resolution characteristics
+\end{itemize}
+
+Feature extraction quality depends critically on accurate fiducial point detection, which is itself a non-trivial problem subject to noise and morphological variability.
+
+\subsubsection{Classical Algorithms}
+
+The standard classifiers apply: SVMs for high-dimensional feature spaces (though sensitive to kernel and regularization choices), random forests for interpretability via feature importance~\cite{ghilardi2024machine}, logistic regression for calibrated probabilistic output, and kNN as a nonparametric baseline.
+
+\subsection{Performance and Limitations}
+
+Ghilardi et al.~\cite{ghilardi2024machine} reported an AUROC of 0.68 (95\% CI: 0.64--0.72) using Random Forests with demographic and basic ECG features for Chagas screening in rural Brazilian settings. This is adequate for a first-pass screen in resource-limited contexts but far below the sensitivity needed for standalone diagnosis. The limitations are well known:
+
+\begin{itemize}
+    \item \textbf{Feature Engineering Overhead:} Requires domain expertise and extensive experimentation
+    \item \textbf{Information Loss:} Hand-crafted features inevitably discard potentially discriminative information
+    \item \textbf{Limited Adaptability:} Fixed feature sets may not generalize across populations or recording conditions
+    \item \textbf{Preprocessing Sensitivity:} Performance is highly dependent on the quality of fiducial point detection
+\end{itemize}
+
+That said, traditional approaches remain the pragmatic choice when compute is limited and training sets are small---exactly the conditions of rural Chagas screening.
+
+\section{Deep Learning Approaches}
+
+Deep learning replaces hand-crafted features with end-to-end representation learning, and the subsections below trace the families that have shaped ECG classification: convolutional networks for local morphology, recurrent and hybrid models for temporal dependencies, attention-based Transformers, transfer-learning strategies that exploit unlabeled data, diffusion models for generative augmentation, and physics-informed networks that constrain learned representations with electrophysiological priors. Each direction addresses a different limitation of the previous one, and several reappear as building blocks in the experiments reported later in this thesis.
+
+\subsection{Convolutional Neural Networks for ECG}
+
+Convolutional Neural Networks (CNNs) bypass feature engineering entirely, learning discriminative representations directly from raw signals~\cite{he2016deep}. Three properties make them a natural fit for ECG data: convolutional filters detect characteristic patterns (QRS complexes, ST elevations) regardless of where they fall in the recording; stacking layers builds a hierarchy from individual waveforms up to rhythm-level features; and weight sharing keeps the parameter count manageable, which matters when Chagas-positive training examples number in the thousands rather than millions.
+
+\subsubsection{Architectural Variants}
+
+Residual Networks (ResNets)~\cite{he2016deep} are the dominant architecture for ECG classification. Ribeiro et al.~\cite{ribeiro2020automatic} reached AUROC above 0.90 for multiple cardiac abnormalities on a large Brazilian dataset, the benchmark that subsequent work, including this thesis, builds on. The residual connection mechanism:
+
+\begin{equation}
+\mathbf{y} = \mathcal{F}(\mathbf{x}, \{W_i\}) + \mathbf{x}
+\end{equation}
+
+addresses the vanishing gradient problem, enabling training of very deep networks. For Chagas detection, typical architectures employ 18-50 residual layers, with 1D convolutional kernels of varying sizes (3, 7, 15 samples) to capture features at multiple temporal scales.
+
+\subsection{Recurrent Architectures for Temporal Modeling}
+
+Recurrent Neural Networks (RNNs), particularly LSTMs and GRUs, model sequential dependencies directly: beat-to-beat variability, rhythm irregularities, and long-range temporal patterns that CNNs struggle to capture. In practice, though, RNNs underperform CNNs on single ECG recordings. Sequential processing prevents parallelization, training becomes unstable on long sequences (a 10-second ECG at 500~Hz is 5,000 steps), and the recurrent state bottleneck limits representational capacity. Their strength is modeling dynamics \emph{across} beats or recordings, not within a single one.
+
+\subsection{Hybrid Architectures}
+
+Hybrid CNN-RNN architectures combine the two: a CNN extracts local features from the raw ECG, and an RNN models longer-range dependencies between the extracted representations. For Chagas detection, hybrid models reach AUROC values in the 0.78--0.82 range on validation data~\cite{jidling2023screening}, better than either component alone but still well short of clinical requirements.
+
+\subsection{Attention Mechanisms and Transformers}
+
+Attention mechanisms~\cite{vaswani2017attention} let the model weight different parts of the input dynamically, and multi-head self-attention captures both local and global dependencies without recurrence. The first-place PhysioNet 2025 solution used a Vision Transformer backbone~\cite{santvliet2025detecting}, confirming that Transformers can work for ECG classification given enough compute. The practical obstacles are steep:
+\begin{itemize}
+    \item Quadratic computational complexity in sequence length (problematic for 10-second ECGs at 500Hz sampling)
+    \item Large parameter counts requiring extensive training data
+    \item Training time 4--8$\times$ longer than CNNs (24--48 GPU hours vs.\ 6--8 hours)
+\end{itemize}
+
+\subsection{Transfer Learning and Pre-trained Models}
+
+When labeled Chagas data is scarce, transfer learning from models pre-trained on larger ECG corpora is the obvious remedy: use representations learned from abundant arrhythmia data and fine-tune on the smaller Chagas-labeled set. Two strategies dominate:
+
+\begin{itemize}
+    \item \textbf{Supervised Pre-training:} Models trained on large labeled ECG datasets such as CODE-15\%~\cite{ribeiro2020automatic} or PTB-XL can be fine-tuned for Chagas detection. The pre-trained layers provide general cardiac feature extractors, while task-specific layers are trained on Chagas-labeled data.
+
+    \item \textbf{Self-Supervised Pre-training:} Methods such as contrastive learning, masked signal modeling, and temporal predictive coding enable learning representations from unlabeled ECG data. These approaches are particularly relevant given the abundance of unlabeled ECGs relative to serologically confirmed Chagas cases.
+\end{itemize}
+
+Self-supervised pre-training has cut labeled-data requirements by 50--80\% in related domains while maintaining comparable performance. For Chagas detection, where each positive label requires serological confirmation, this is the kind of data efficiency that matters, yet few groups have tested it systematically.
+
+\subsubsection{Masked-ECG Self-Supervised Learning}
+
+A particularly influential family of self-supervised methods adapts masked modeling, originally developed for language and vision, to the electrocardiogram. The signal is partitioned into temporal (and, for multi-lead data, spatial) patches; a random subset is masked, and the network is trained to reconstruct the missing content from the surrounding context. By forcing the model to infer occluded segments, this objective induces representations that encode both local waveform morphology and longer-range rhythm structure without any diagnostic labels. Na et al.~\cite{na2024guiding} showed that explicitly guiding masked representation learning to capture the spatio-temporal relationships of the 12-lead ECG yields embeddings that transfer effectively to downstream cardiac classification tasks, outperforming contrastive baselines under limited supervision. Such masked pre-training is directly relevant to Chagas screening, where a large unlabeled corpus (e.g., the CODE cohort) vastly exceeds the pool of serologically confirmed cases.
+
+\subsubsection{ECG Foundation Models}
+
+The masked-modeling and supervised pre-training paradigms have converged into a new generation of \emph{ECG foundation models}: large networks pre-trained once on millions of recordings and then fine-tuned, or used as frozen feature extractors, across many downstream tasks~\cite{song2024foundation}. ECGFounder~\cite{li2024ecgfounder} is trained on over ten million recordings with broad external evaluation across multiple clinical domains, providing general-purpose cardiac embeddings that can be adapted to rare-disease detection. ECG-FM~\cite{mckeen2024ecgfm} is an open foundation model combining masked and contrastive objectives, released with reproducible weights to facilitate transfer to specialized tasks. More compact, openly available masked-pre-trained encoders, which we collectively refer to in this work as DeepECG-SSL-style models, offer a favourable accuracy-to-compute trade-off, making them attractive when fine-tuning under the resource constraints of low-prevalence screening. These foundation-model and masked-SSL strategies underpin several of the contributions developed in this thesis, namely the fine-tuning of a self-supervised encoder (Approach 12), its combination with a temporal-attention head (Approach 15), and a hybrid scheme that couples a foundation-model backbone with a physics-informed branch (Approach 14).
+
+\subsection{Diffusion Models for ECG Generation}
+
+Diffusion models have displaced GANs and VAEs as the default generative architecture for time-series data. Conditional DDPMs~\cite{ho2020denoising} and Latent Diffusion Models (LDMs)~\cite{rombach2022highresolution} now produce high-fidelity synthetic signals across domains. In the context of ECG analysis, diffusion models can synthesize realistic waveforms conditioned on specific disease labels, potentially addressing the severe class imbalance typical of rare diseases like Chagas; Alcaraz and Strodthoff~\cite{alcaraz2023diffusion} demonstrated diffusion-based conditional ECG generation with structured state-space backbones. By learning the underlying data distribution, LDMs operating in compressed latent spaces offer computational efficiency while preserving the morphological characteristics of cardiac arrhythmias. A further refinement couples the denoising process with biophysical constraints, yielding physics-guided diffusion in which generated signals are encouraged to respect the dynamics of cardiac models such as those discussed below.
+
+\subsection{Physics-Informed Neural Networks (PINNs) in Cardiology}
+
+Physics-Informed Neural Networks (PINNs)~\cite{raissi2019physics} take a different approach to the generalization problem: instead of learning everything from data, they penalize deviations from known physical laws, constraining what the network can represent. In cardiology, two modeling families lend themselves to this treatment:
+\begin{itemize}
+    \item \textbf{Biophysical Reaction-Diffusion Models:} Systems like the Aliev-Panfilov model~\cite{aliev1996simple} describe action potential propagation using parameters with direct electrophysiological meaning (e.g., conduction velocity and repolarization rate). Regularizing a network to extract these parameters can enforce the learning of disease-invariant physiological features.
+    \item \textbf{Phenomenological Dynamical Models:} Models such as the McSharry limit-cycle oscillator~\cite{mcsharry2003dynamical} generate synthetic ECG waveforms through characteristic differential equations. While offering rich parametrizations (e.g., 17 parameters representing P, Q, R, S, T wave amplitudes and widths), their high degrees of freedom carry the risk of memorizing recording-specific artifacts rather than underlying pathology.
+\end{itemize}
+These physics-guided approaches aim to transition automated diagnostics from "Black-Box" to "Gray-Box" systems, providing interpretable metrics directly related to cardiac function.
+
+\section{Critical Challenges and Limitations}
+
+The obstacles to clinical-grade Chagas detection fall into three groups: properties of the data itself, methodological pitfalls of the learning algorithms, and the computational budget required to train and deploy them. The subsections below treat each in turn, framing the constraints that the architectures of the previous section must overcome and motivating the design choices made in the experimental chapters.
+
+\subsection{Data-Related Challenges}
+
+Four properties of the data dominate the difficulty of Chagas detection: the rarity of positive cases, the noise characteristics of real recordings, the limited reliability of the labels themselves, and the biological heterogeneity of the patient population. Each of these issues constrains what any classifier can achieve regardless of architecture, and each demands its own mitigation strategy.
+
+\subsubsection{Class Imbalance}
+
+The 2.70\% Chagas disease prevalence in the PhysioNet dataset is epidemiologically realistic but algorithmically brutal. A model that predicts ``negative'' for every patient scores 97.3\% accuracy. The real failure mode, missing a positive case, is the one that matters clinically and the one that imbalanced training actively encourages.
+
+Mitigation strategies include:
+\begin{itemize}
+    \item \textbf{Resampling:} SMOTE, ADASYN for synthetic minority oversampling; random undersampling of majority class
+    \item \textbf{Cost-Sensitive Learning:} Asymmetric misclassification costs (false negative >> false positive for screening)
+    \item \textbf{Loss Function Modification:} Focal loss~\cite{lin2017focal}, class-weighted cross-entropy
+    \item \textbf{Ensemble Methods:} Training multiple models on balanced subsets
+\end{itemize}
+
+However, each approach introduces trade-offs. Synthetic oversampling risks learning spurious patterns; aggressive undersampling discards potentially informative negative examples; cost-sensitive approaches require careful tuning of relative costs.
+
+\subsubsection{Signal Quality and Noise}
+
+Real-world ECG recordings suffer from multiple noise sources:
+
+\begin{itemize}
+    \item \textbf{Powerline Interference:} 50/60 Hz sinusoidal contamination from electrical infrastructure
+    \item \textbf{Baseline Wander:} Low-frequency (<0.5 Hz) drift from respiration, patient movement
+    \item \textbf{Muscle Artifacts (EMG):} High-frequency noise (>40 Hz) from muscle tension
+    \item \textbf{Motion Artifacts:} Electrode displacement, patient movement
+    \item \textbf{Poor Contact:} High impedance, signal dropout
+\end{itemize}
+
+While preprocessing techniques (bandpass filtering, wavelet denoising, adaptive filtering) mitigate these artifacts, they introduce additional hyperparameters and potential information loss. Models trained on heavily preprocessed data may also fail when deployed on raw signals, raising generalization concerns.
+
+\subsubsection{Measurement Uncertainty and Human Annotation Variability}
+
+A challenge that receives less attention than it deserves is measurement uncertainty itself:
+
+\begin{itemize}
+    \item \textbf{Inter-observer Variability:} Studies report Cohen's kappa of 0.6-0.8 for manual ECG interpretation, indicating substantial but imperfect agreement even among cardiologists
+    \item \textbf{Equipment Variability:} Different ECG devices exhibit varying frequency responses, gain characteristics, and noise levels
+    \item \textbf{Placement Variability:} Electrode positioning differences between recordings and operators affect morphology
+    \item \textbf{Temporal Variability:} Within-subject ECG characteristics vary with autonomic tone, circadian rhythms, meal timing, etc.
+\end{itemize}
+
+This raises a fundamental question: What represents the performance ceiling for automated systems when ground-truth labels themselves contain noise? If inter-cardiologist agreement is 75\%, expecting algorithmic performance exceeding this threshold may be unrealistic.
+
+\subsubsection{Inter-Patient Response Heterogeneity}
+
+For population-level deployment, inter-individual variability is a harder problem than it first appears: identical ECG features may carry different clinical significance across patients due to:
+
+\begin{itemize}
+    \item Age-related changes in cardiac electrophysiology
+    \item Sex-related differences in QT interval, QRS morphology
+    \item Body habitus affecting electrical axis
+    \item Comorbidities (hypertension, diabetes) influencing baseline ECG
+    \item Genetic variation in ion channel function
+\end{itemize}
+
+One-size-fits-all models may therefore hit a ceiling that no architecture can raise. Subgroup-specific or personalized models incorporating demographic covariates are the obvious next step, but for a rare disease like Chagas the per-subgroup sample sizes quickly become too small to train on.
+
+\subsection{Methodological Challenges}
+
+Beyond the data-side issues discussed above, deep ECG classifiers share three recurring methodological weaknesses: they overfit when positive examples are scarce, lose accuracy when the deployment cohort differs from the training cohort, and offer little transparency into how individual predictions are reached. The following three subsections take each in turn and survey the partial mitigations proposed in the literature.
+
+\subsubsection{Overfitting}
+
+Deep learning models, with millions of parameters (ResNet-34: 21M; ResNet-50: 23M), face severe overfitting risk when training data is limited relative to model capacity. The PhysioNet dataset, while large in absolute terms, provides only ~9,900 Chagas-positive examples after accounting for 2.70\% prevalence, modest for training complex models.
+
+Standard regularization techniques include:
+\begin{itemize}
+    \item Dropout (typical rate: 0.3-0.5)
+    \item L2 weight decay (typical: 1e-4)
+    \item Early stopping on validation loss
+    \item Data augmentation (discussed below)
+    \item Batch normalization
+\end{itemize}
+
+Nevertheless, validation loss frequently plateaus or increases while training loss continues decreasing, indicating memorization rather than generalization.
+
+\subsubsection{Generalization and Domain Shift}
+
+A central limitation revealed by PhysioNet Challenge 2025 is poor cross-dataset generalization. The official ranking metric for the 2025 Challenge is the true positive rate at a fixed 5\% false positive rate (TPR@5\%FPR), a screening-capacity measure that rewards models able to recover positive cases while tolerating only a small fraction of false alarms~\cite{reyna2024detection}. This formulation supersedes the earlier PhysioNet 2024-era Challenge Score, defined as the equally weighted average $0.5\cdot\text{AUROC}+0.5\cdot\text{AUPRC}$, which is reported here only for historical comparison and is not directly comparable to the 2025 metric. Under either definition, models achieving high scores on validation data often degrade substantially on hidden test sets drawn from different cohorts.
+
+This ``domain shift'' stems from differences in patient demographics, equipment characteristics (sampling rates, analog filters, ADC resolution), institutional preprocessing pipelines, and population-specific ECG morphology. Domain adaptation techniques exist (domain-adversarial training, multi-source generalization), but few groups have applied them to Chagas disease detection specifically.
+
+\subsubsection{Interpretability and Clinical Trust}
+
+Deep learning models typically function as opaque systems, providing predictions without transparent, human-interpretable reasoning. For clinical deployment, this opacity poses several challenges:
+
+\begin{itemize}
+    \item \textbf{Lack of Trust:} Physicians hesitant to act on unexplainable predictions
+    \item \textbf{Difficulty in Debugging:} When models fail, identifying failure modes proves challenging
+    \item \textbf{Regulatory Concerns:} Medical device regulators require understanding of decision-making processes
+    \item \textbf{Liability Issues:} Unclear responsibility allocation when unexplainable systems err
+\end{itemize}
+
+Explainable AI (XAI) techniques (including Gradient-weighted Class Activation Mapping (Grad-CAM), attention weight visualization, and SHAP values) provide partial solutions but remain active research areas. Current XAI methods answer ``where'' the model attends but not ``why'' those regions are diagnostically relevant.
+
+\subsection{Computational Resource Constraints}
+
+Compute requirements bracket the practical envelope of ECG deep learning at both ends. Training cost determines who can develop the models in the first place, while inference cost determines where they can run after deployment, a question particularly acute for portable screening devices in endemic regions. The two subsections below quantify each side of this envelope and survey the compression techniques that bridge them.
+
+\subsubsection{Training Costs}
+
+Table~\ref{tab:training_costs} presents estimated computational requirements for various approaches, derived from typical training configurations reported in the literature and common cloud computing pricing. These values are approximate and intended to illustrate the relative computational burden across model classes rather than provide precise benchmarks, as actual costs vary substantially with implementation details, dataset size, and hardware configuration.
+
+\begin{table}[h]
+\centering
+\caption[Estimated training resource requirements and environmental costs]{Estimated training resource requirements and environmental costs. Values are approximate, based on typical configurations for training on the PhysioNet Challenge dataset scale ($\sim$360,000 ECGs).}
+\label{tab:training_costs}
+\begin{tabular}{lcccr}
+\hline
+\textbf{Model} & \textbf{GPU Hours} & \textbf{Energy [kWh]} & \textbf{CO$_2$ [kg]} & \textbf{Cost [\$]} \\
+\hline
+Random Forest & $<$0.1 & 0.01 & 0.005 & $<$1 \\
+ResNet-34 & 6--8 & 2.4 & 1.2 & 12--24 \\
+ResNet-50 + Transfer & 3--5 & 1.5 & 0.75 & 6--15 \\
+Vision Transformer & 24--48 & 15--20 & 10--15 & 48--144 \\
+Ensemble (5$\times$) & 40--60 & 20 & 10 & 80--180 \\
+Self-supervised Pretrain & 100--200 & 80--100 & 50--60 & 200--600 \\
+\hline
+\end{tabular}
+\end{table}
+
+The estimates assume NVIDIA V100 GPU hardware (300W thermal design power), cloud computing rates of approximately \$2--3 per GPU-hour, and average carbon intensity of 0.5~kg~CO$_2$/kWh. For research groups with limited budgets or in regions with carbon-intensive electricity generation, these costs become prohibitive.
+
+Environmental costs also merit consideration. Training a single Transformer model produces CO$_2$ equivalent to a transatlantic flight, raising sustainability questions for models ultimately deployed in low-resource settings with minimal carbon footprint alternatives.
+
+\subsubsection{Inference Constraints for Edge Deployment}
+
+The ultimate goal of portable ECG devices with on-board AI for rural screening imposes stringent inference requirements. Table~\ref{tab:inference_costs} presents representative inference characteristics for various model architectures. Parameter counts reflect standard architectures adapted for 12-lead ECG input~\cite{he2016deep,ribeiro2020automatic}, while latency estimates are based on single-threaded CPU execution on ARM Cortex-A72 class processors (typical of Raspberry Pi 4 and similar edge devices).
+
+\begin{table}[h]
+\centering
+\caption[Representative inference characteristics for various model architectures]{Representative inference characteristics for various model architectures. Parameter counts are based on standard architectures; latency values are approximate for ARM Cortex-A72 class CPUs.}
+\label{tab:inference_costs}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Model} & \textbf{Parameters} & \textbf{Size [MB]} & \textbf{CPU Latency} & \textbf{RAM [MB]} \\
+\hline
+Random Forest & 10K & 0.01 & $\sim$5 ms & $<$10 \\
+ResNet-34 (FP32) & 21M & 95 & $\sim$200 ms & 200 \\
+ResNet-50 (FP32) & 23M & 95 & $\sim$300 ms & 300 \\
+ResNet-34 (INT8) & 21M & 22 & $\sim$50 ms & 50 \\
+MobileNet-1D & 4M & 16 & $\sim$30 ms & 30 \\
+Ensemble (5$\times$) & 100M+ & 475 & $\sim$1500 ms & 1000+ \\
+\hline
+\end{tabular}
+\end{table}
+
+For deployment on edge devices (Raspberry Pi, smartphone SoCs), model compression techniques become essential:
+
+\begin{itemize}
+    \item \textbf{Quantization:} FP32 → INT8 reduces memory 4× with minimal accuracy loss (~1\% AUROC degradation)
+    \item \textbf{Pruning:} Removing low-magnitude weights can reduce parameters 50-70\% with careful retraining
+    \item \textbf{Knowledge Distillation:} Training compact ``student'' models to mimic larger ``teacher'' networks
+    \item \textbf{Neural Architecture Search:} Automatically designing efficient architectures for target hardware
+\end{itemize}
+
+Most academic work ignores this constraint entirely, optimizing for AUROC on a GPU cluster without asking whether the model could ever run where the patients are.
+
+\section{Emerging Research Directions}
+
+Beyond the architectures already in widespread use, five directions stand out as the most promising avenues for the next generation of Chagas detection systems: longitudinal modeling of serial ECGs, generative augmentation of scarce positive cases, prognostic disease-progression prediction, multimodal fusion with clinical metadata, and explainability designed into the model rather than bolted on afterwards. The subsections below assess each direction, its data requirements, and its connection to the experimental contributions of this thesis.
+
+\subsection{Temporal Diagnostics: Serial ECG Analysis}
+
+Every approach reviewed so far treats a single ECG as an independent snapshot. In clinical practice, physicians compare serial recordings over weeks or months, looking for progression: new conduction blocks, widening QRS, falling voltage. A computational model that could do the same would reduce measurement noise through temporal averaging and detect the trajectory of disease rather than a static cross-section.
+
+The modeling options are straightforward: recurrent architectures (LSTM/GRU) over a sequence of ECG embeddings, temporal attention that learns which recordings in a series are most informative, or change-detection approaches that focus on how features evolve between visits. The bottleneck is data: most public datasets provide one ECG per patient, and longitudinal cohorts with serial recordings are rare. The temporal-attention component of Approach~15 in this thesis provides a natural starting point for this direction (see Future Work, Chapter~\ref{chap:conclusions}).
+
+\subsection{Generative Models for Data Augmentation}
+
+Traditional data augmentation relies on deterministic transformations (time warping, amplitude scaling, noise injection) that cannot create genuinely new morphological patterns. Generative models can. A conditional DDPM trained on real ECGs and then sampled with a Chagas-positive label can, in principle, produce synthetic recordings that exhibit RBBB, LAFB, and other characteristic patterns the classifier has too few real examples to learn from. The same approach extends to rare subtypes (advanced cardiomyopathy with low-voltage QRS) and to adversarial robustness testing.
+
+The risks are equally concrete. Generated signals must be physiologically plausible, not just statistically similar, or the classifier learns artifacts. Mode collapse can limit diversity. The diffusion model's own training cost is comparable to the classifier's, doubling the compute budget. And the central question is hard to answer: how do you verify that synthetic data helps the classifier rather than misleading it? Cardiologist evaluation of generated ECGs (a Turing test for waveforms) is one route; downstream classifier performance on a held-out real test set is the other. This thesis evaluates both (Approaches~5, 6, 9).
+
+\subsection{Disease Progression Prediction}
+
+Detection is framed as binary classification (Chagas or not), but the clinically harder question is prognostic: \textit{will this patient develop cardiomyopathy within five years?} Survival analysis and time-to-event models (Cox regression with deep features, DeepSurv, recurrent hazard models) could predict RBBB onset, arrhythmia risk, heart failure hospitalization, and mortality, enabling risk-stratified surveillance rather than uniform follow-up.
+
+The data requirements are steep: longitudinal cohorts with baseline ECGs and years of follow-up, time-stamped clinical events, and competing-risk information. The SaMi-Trop study could serve this purpose, but powering a survival analysis requires hundreds of events, and Chagas cardiomyopathy progresses slowly. A multi-task formulation that combines detection and progression prediction might extract more from limited longitudinal data, though no one has demonstrated this for Chagas specifically.
+
+\subsection{Multimodal Integration}
+
+ECG changes in Chagas are non-specific: RBBB and LAFB also appear in idiopathic cardiomyopathy, ischemic disease, and aging. Disambiguation requires additional information. The lowest-hanging fruit is clinical metadata already collected at the point of care (age, sex, geographic origin, epidemiological risk factors), which a model can ingest alongside the ECG signal at negligible cost. Laboratory markers (NT-proBNP, troponin, inflammatory markers) and imaging (echocardiography, cardiac MRI, chest X-ray) carry stronger signal but are expensive and unavailable in primary-care settings.
+
+Fusion architectures range from simple feature concatenation (early fusion) through separate modality-specific models with ensembled predictions (late fusion) to attention-based cross-modality interaction learning. The practical constraint is that any modality beyond the ECG itself narrows the deployment context: the value of a screening tool lies in working where resources are scarce, not where a full cardiac workup is already available. Fusing ECG embeddings with clinical metadata, the cheapest multimodal extension, is identified as future work in Chapter~\ref{chap:conclusions}.
+
+\subsection{Explainability as a First-Class Objective}
+
+Post-hoc explainability (Grad-CAM, SHAP) tells a physician \emph{where} the model looked but not \emph{why} that region matters. A more productive direction builds interpretability into the architecture itself.
+
+Attention weights are the simplest example: in a Transformer or attention-augmented CNN, the learned weights directly indicate which temporal regions (QRS complexes, T waves) drive the prediction, and the resulting maps can be shown to a clinician without additional computation.
+
+Concept bottleneck models~\cite{koh2020concept} go further. Instead of mapping ECG $\to$ disease in one opaque step, they interpose an intermediate ``concept'' layer of human-interpretable features like QRS duration, RBBB presence, or T-wave inversion. The model predicts concepts from the ECG, then predicts disease from concepts. A physician can inspect the intermediate predictions, override incorrect ones, and trace exactly which clinical features led to the final output. The electrophysiological parameters extracted by the PINNs in this thesis (Chapter~\ref{chap:research}) could serve as exactly this kind of concept layer, and this connection is developed in the Future Work discussion (Chapter~\ref{chap:conclusions}).
+
+Inherently interpretable architectures such as Neural Additive Models and GAMs with neural shape functions take the constraint even further, maintaining transparency by construction. The cost is typically 5--10\% AUROC degradation versus a black-box model. For a screening tool where physician trust determines adoption, that trade-off is worth making.
+
+\section{Research Gaps and Opportunities}
+
+The gaps that remain:
+
+The most immediate is performance. Current best AUROC for Chagas detection sits around 0.75, far below the $>$0.90 sensitivity needed for a standalone screening tool. Closely related is generalization: models trained on one cohort routinely fail on another, and cross-device, cross-population robustness has received little systematic study.
+
+Explainability and resource efficiency are deployment blockers. Physicians will not adopt a tool they cannot interrogate, and the models that score highest in competitions require GPU clusters unavailable in endemic regions.
+
+Three additional directions are largely untested for Chagas specifically:
+\begin{itemize}
+    \item Serial ECG analysis and disease progression prediction, still in early stages and limited by the scarcity of longitudinal datasets.
+    \item Uncertainty quantification: confidence intervals and prediction intervals are rarely reported in the ECG classification literature, yet they are essential for clinical decision-making.
+    \item Multi-task learning, active learning, and fairness auditing across demographic subgroups, each individually important and none systematically explored for this disease.
+\end{itemize}

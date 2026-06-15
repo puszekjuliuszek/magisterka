@@ -1,0 +1,204 @@
+\chapter{Introduction}
+\label{chap:introduction}
+
+This chapter frames the clinical and methodological context of the thesis. It establishes the epidemiological burden of Chagas disease, the role of the electrocardiogram as a low-cost screening modality, and the PhysioNet Challenge 2025 as the principal benchmark against which the proposed approaches are measured. The chapter then states the motivation for a Green AI, physics-informed alternative to the compute-heavy Challenge winners, fixes the scope and contributions of the work, and concludes with the research objectives, questions, and hypotheses that structure the remainder of the document.
+
+\section{Introduction to Automated Chagas Disease Detection}
+
+Chagas disease, or American trypanosomiasis, caused by the protozoan parasite \textit{Trypanosoma cruzi}, is a public health problem affecting approximately 6.5 million individuals globally, with an estimated 10,000 annual deaths~\cite{reyna2024detection}. Historically confined to endemic regions of Latin America, the disease has spread through population migration, affecting over 300,000 individuals in the United States, 80,000 in Europe, and 3,000 in Japan~\cite{sabino2024epidemiology}. The cardiac manifestations of chronic Chagas disease, particularly Chagas cardiomyopathy, account for approximately 90\% of mortality, making early detection critical for patient prognosis.
+
+Given the high mortality associated with cardiac involvement and the limited availability of serological testing in endemic regions, there is a need for accessible, low-cost screening tools that can identify at-risk patients in primary care settings. The electrocardiogram (ECG) is a promising modality for this purpose: it is non-invasive, widely available even in resource-constrained environments, and relatively inexpensive to acquire. Chagas cardiomyopathy also manifests through characteristic ECG abnormalities, including conduction defects and arrhythmias, that can appear years before overt clinical symptoms, providing a window for early intervention~\cite{nunes2018chagas}.
+
+The subtle and often non-specific nature of ECG changes in early-stage Chagas disease, however, poses challenges for both manual interpretation and automated classification systems. This motivates the development of machine learning approaches capable of detecting patterns that elude human observers. The following chapter reviews the current state of research in automated Chagas disease detection from ECG signals, examining traditional machine learning methods, deep learning architectures, their respective limitations, and emerging research directions that address current gaps.
+
+\section{Clinical Context and ECG Manifestations}
+
+A grasp of the clinical setting is a prerequisite for any reasoned design of an automated classifier. The following subsections describe the biphasic progression of Chagas disease and the mechanisms by which chronic infection damages the cardiac conduction system, catalogue the ECG abnormalities that arise from this damage, and outline the practical limitations of current serological diagnosis that motivate an ECG-based screening pathway.
+
+\subsection{Pathophysiology and Disease Progression}
+
+Chagas disease progression follows a characteristic biphasic pattern. The acute phase, lasting 4-8 weeks, is frequently asymptomatic or presents with non-specific symptoms, rendering early detection challenging. Following this period, patients enter a chronic phase that may persist for decades. Approximately 60-70\% of infected individuals remain in the indeterminate form, showing positive serology without clinical symptoms. However, 20-30\% develop cardiac involvement, while approximately 10\% develop gastrointestinal complications~\cite{nunes2018chagas}.
+
+The cardiac pathophysiology involves persistent parasitic presence in myocardial tissue, chronic inflammatory response, progressive fibrosis, autonomic dysfunction, and damage to the cardiac conduction system. These pathological changes manifest in the ECG through a constellation of abnormalities that, while not individually pathognomonic, form characteristic patterns when considered collectively.
+
+\subsection{Characteristic ECG Abnormalities}
+
+The most prevalent ECG findings in Chagas cardiomyopathy include:
+
+\begin{itemize}
+    \item \textbf{Right Bundle Branch Block (RBBB):} The most characteristic finding, occurring in 20-30\% of patients with chronic cardiac involvement. When combined with Left Anterior Fascicular Block (LAFB), specificity exceeds 90\% in endemic regions~\cite{nunes2018chagas}.
+
+    \item \textbf{Repolarization Abnormalities:} ST-segment changes and T-wave inversions, particularly in inferior leads, reflecting underlying myocardial damage.
+
+    \item \textbf{Ventricular Arrhythmias:} Ranging from premature ventricular contractions (PVCs) to sustained ventricular tachycardia (VT), with presence of complex arrhythmias associated with 5-year mortality exceeding 40\%.
+
+    \item \textbf{Atrioventricular Conduction Abnormalities:} Including first, second, and third-degree AV blocks, potentially requiring pacemaker implantation.
+
+    \item \textbf{Low Voltage QRS:} Indicating advanced cardiomyopathy with poor prognosis.
+\end{itemize}
+
+ECG abnormalities may precede clinically apparent heart failure by several years, establishing a temporal window for early therapeutic intervention~\cite{nunes2018chagas}. These findings are not pathognomonic for Chagas disease and overlap with other cardiomyopathies, so reliable detection requires pattern recognition approaches that integrate multiple signal features.
+
+\subsection{Current Diagnostic Limitations}
+
+The gold standard for Chagas disease diagnosis remains serological testing (ELISA, IFA). These methods face several practical limitations in resource-constrained settings:
+
+\begin{itemize}
+    \item Limited availability in rural endemic regions
+    \item Requirement for laboratory infrastructure and trained personnel
+    \item Cost barriers for large-scale screening programs
+    \item Turnaround time preventing immediate clinical decision-making
+\end{itemize}
+
+These constraints motivate the development of ECG-based screening approaches, particularly automated systems capable of deployment in primary care settings. The following sections examine the data resources, algorithmic approaches, and persistent challenges that characterize this field.
+
+\section{The PhysioNet Challenge 2025: A Benchmark for Chagas Detection}
+
+The PhysioNet Challenge 2025 supplies both the data and the evaluation protocol that anchor this thesis. The subsections below describe the composition of the multi-cohort Brazilian dataset and its inherent class imbalance, define the official TPR-at-5\%-FPR Challenge Score together with the threshold-independent metrics used in earlier work, and summarize the performance ceiling reached by top-ranked compute-heavy submissions. They close by arguing for a Green AI, physics-informed alternative that targets comparable performance under a consumer-hardware budget.
+
+\subsection{Challenge Design and Dataset Composition}
+
+The George B. Moody PhysioNet Challenge 2025~\cite{reyna2024detection} is the first large-scale, openly accessible initiative focused specifically on automated Chagas disease detection from ECG signals. The challenge dataset aggregates recordings from multiple Brazilian cohorts, comprising:
+
+\begin{table}[h]
+\centering
+\caption{Summary of PhysioNet Challenge 2025 data sources}
+\label{tab:challenge_data}
+\begin{tabular}{lccr}
+\hline
+\textbf{Database} & \textbf{Cohort} & \textbf{Recordings} & \textbf{Chagas Prevalence} \\
+\hline
+CODE-15\% & Training & 335,621 & 1.92\% \\
+SaMi-Trop & Training & 1,631 & 100.00\% \\
+PTB-XL & Training & 21,779 & 0.00\% \\
+REDS-II & Validation & 1,419 & 54.85\% \\
+REDS-II & Test & 560 & 50.00\% \\
+SaMi-Trop 3 & Test & 3,854 & 28.50\% \\
+ELSA-Brasil & Test & 13,739 & 2.04\% \\
+\hline
+\textbf{Total} & --- & \textbf{378,603} & \textbf{2.70\%} \\
+\hline
+\end{tabular}
+\end{table}
+
+The dataset exhibits several noteworthy characteristics:
+\begin{itemize}
+    \item \textbf{Scale:} With nearly 380,000 recordings, this represents the largest publicly available ECG dataset for Chagas disease.
+    \item \textbf{Class Imbalance:} Overall Chagas prevalence of 2.70\% reflects real-world screening scenarios, though presents significant methodological challenges.
+    \item \textbf{Heterogeneity:} Incorporation of multiple cohorts spanning blood donors (REDS-II), longitudinal studies (SaMi-Trop), and epidemiological surveys (ELSA-Brasil) ensures diversity.
+    \item \textbf{Negative Controls:} Inclusion of PTB-XL (0\% Chagas) provides examples of other cardiac pathologies.
+\end{itemize}
+
+\subsection{Evaluation Metrics and Performance Benchmarks}
+
+The official PhysioNet Challenge 2025 metric is the \textit{Challenge Score}, defined as the true positive rate (sensitivity) achieved at a fixed false positive rate of 5\%:
+
+\begin{equation}
+\text{Challenge Score} = \text{TPR} \mid_{\text{FPR} = 5\%}
+\end{equation}
+
+This metric directly reflects the operational requirement of a screening tool: how many true Chagas cases the system can identify while constraining false alarms to a clinically tolerable rate. By fixing the false positive rate at 5\%, the metric captures the model's screening capacity in the high-specificity regime where confirmatory serological follow-up remains feasible~\cite{reyna2024detection}.
+
+This metric selection should be considered alongside the threshold-independent measures that remain useful for diagnostic analysis. The Area Under the Receiver Operating Characteristic Curve (AUROC) quantifies the probability that a randomly selected positive case ranks higher than a randomly selected negative case, providing a threshold-independent assessment of discriminative capacity. For imbalanced datasets, however, AUROC can present an overly optimistic view of classifier performance~\cite{sameni2025geometry}. The Area Under the Precision-Recall Curve (AUPRC) addresses this limitation by focusing explicitly on positive class performance across varying decision thresholds. For rare diseases like Chagas, where prevalence is low, AUPRC provides a more honest assessment of clinical utility~\cite{sameni2025geometry}.
+
+It should be noted that the earliest approaches in this thesis (Approaches~1--3) predate the adoption of the official metric and reported only AUROC and AUPRC, occasionally summarized through a superseded composite of the form $0.5 \times \text{AUROC} + 0.5 \times \text{AUPRC}$. This early formulation is \textit{not} comparable to the official TPR-at-5\%-FPR Challenge Score and is never tabulated alongside it.
+
+Performance analysis of participating teams reveals several key findings~\cite{reyna2024detection}:
+
+\begin{itemize}
+    \item \textbf{Top Performance:} Leading teams achieved Challenge Scores (TPR @ 5\%) of approximately 0.32 on the hidden test sets.
+    \item \textbf{Methodological Dominance (Heavy AI):} The winning solutions predominantly relied on massive, compute-intensive architectures. For instance, the first-place team (Biomed-Cardio) utilized Vision Transformer-based ECG Foundation Models~\cite{santvliet2025detecting}, while the second-place team (DlaskaLabMUI) employed Transformer-xLSTM Ensembles~\cite{nicolson2025transformer}.
+    \item \textbf{Generalization Gap:} A notable performance degradation was observed when models were evaluated on hidden test sets (e.g., ELSA-Brasil), underscoring the challenge of overfitting to specific hospital environments or ECG devices.
+\end{itemize}
+
+\subsection{The Case for Green AI and Physics-Informed Models}
+
+The dominance of large Transformer and xLSTM architectures in the PhysioNet 2025 Challenge highlights a growing trend in medical machine learning: the reliance on brute-force computational power (often termed "Heavy AI" or "Red AI"). While these models achieve high performance, they require high-performance computing (HPC) clusters with multiple GPUs for training and inference. This is a barrier to deployment in the very regions where Chagas disease is endemic, namely rural areas of Latin America with limited infrastructure and financial resources.
+
+This thesis proposes an alternative aligned with the principles of Green AI~\cite{lapicque2025greenai}. Instead of scaling up the parameter count, we investigate whether incorporating domain knowledge, specifically the physical and electrophysiological laws governing the heart, can achieve competitive performance using a fraction of the computational resources. By using lightweight architectures (such as Adaptive Residual U-Nets and Physics-Informed Neural Networks) that can be trained on consumer-grade hardware (e.g., an Apple Silicon M3 processor), we aim to show that architectural design and physiological constraints can compensate for a smaller parameter footprint. Unlike the "black-box" Transformers of the winning teams, our Physics-Informed approach (extracting McSharry ODE parameters) provides medical interpretability, acting as a "Gray-Box" system that physicians can inspect.
+
+These results establish a performance benchmark against which algorithmic approaches can be evaluated. The following sections examine the two principal paradigms that have been applied to this task: traditional machine learning with hand-crafted features and end-to-end deep learning.
+
+
+
+\section{Motivation}
+
+Chagas disease, caused by the protozoan parasite \textit{Trypanosoma cruzi}, affects approximately 6.5 million people worldwide and causes an estimated 10,000 deaths annually~\cite{reyna2024detection}. The cardiac manifestation of the disease, Chagas cardiomyopathy, accounts for roughly 90\% of mortality and can develop silently over decades before presenting with life-threatening arrhythmias or heart failure~\cite{nunes2018chagas}. Early detection is critical, yet the gold-standard serological tests are often unavailable in the rural Latin American regions where the disease is most prevalent.
+
+The 12-lead electrocardiogram (ECG) offers an alternative screening modality: it is non-invasive, inexpensive, and widely available even in resource-constrained settings. Chagas cardiomyopathy produces characteristic ECG abnormalities, notably right bundle branch block (RBBB), left anterior fascicular block (LAFB), and repolarization changes, that may appear years before clinical symptoms~\cite{nunes2018chagas}. These findings are subtle, non-specific, and hard to detect reliably through manual interpretation, motivating the development of automated classification systems.
+
+The George B. Moody PhysioNet Challenge 2025~\cite{reyna2024detection} established the first large-scale, publicly available benchmark for this task, comprising nearly 380,000 ECG recordings from multiple Brazilian cohorts. The Challenge revealed two critical insights about the current state of the art: (1) leading solutions rely on massive, compute-intensive architectures (Vision Transformers, xLSTM ensembles) requiring high-performance computing clusters~\cite{santvliet2025detecting, nicolson2025transformer}; and (2) even the best models suffer substantial performance degradation when evaluated on unseen patient populations, underscoring the persistent challenge of domain shift in medical AI.
+
+These observations motivate the central premise of this thesis: \textit{Can incorporating domain knowledge from cardiac electrophysiology into lightweight neural network architectures achieve competitive diagnostic performance using consumer-grade hardware, while simultaneously providing interpretable, physics-grounded explanations for clinical decision-making?}
+
+\section{Scope and Contributions}
+
+The thesis presents an experimental program of sixteen iterative approaches to Chagas disease detection from ECG signals, progressing from a baseline 1-D ResNet classifier through generative data augmentation and Physics-Informed Neural Networks to ECG foundation models and self-supervised transfer learning. Fourteen of these approaches (1--12, 14, 15) produced reported results; the remaining two (Approach~13, an ECGFounder+XGBoost interpretable-feature pipeline, and Approach~16, a cross-domain PTB-XL generalization evaluation) are documented as attempted but incomplete experiments, and no numerical results are claimed for them. The approaches are grouped by methodological phase as follows:
+
+\begin{itemize}
+    \item \textbf{Approaches 1--4} establish a baseline through iterative refinement of the data pipeline, evaluation methodology, and training objectives (focal loss, label smoothing, temperature scaling).
+    \item \textbf{Approaches 5--6, 9} explore generative data augmentation using conditional DDPMs~\cite{ho2020denoising}, Latent Diffusion Models~\cite{rombach2022highresolution}, and an Adaptive Residual U-Net architecture optimized for consumer hardware.
+    \item \textbf{Approaches 7--8, 10} investigate Physics-Informed approaches: the Aliev-Panfilov biophysical model~\cite{aliev1996simple} for feature extraction and diffusion guidance, and the McSharry phenomenological model~\cite{mcsharry2003dynamical} for interpretable parametrization.
+    \item \textbf{Approaches 11--12, 14, 15} investigate phenomenological autoencoding and foundation-model / self-supervised transfer learning: a McSharry-structured autoencoder, DeepECG-SSL fine-tuning, a hybrid foundation-model plus PINN encoder, and a self-supervised model augmented with temporal attention. These approaches adopt a stricter evaluation protocol with a held-out CODE-15\% test set and a fully isolated SaMi-Trop cohort reserved for out-of-distribution assessment.
+    \item \textbf{Approaches 13, 16} were attempted but not completed and are discussed qualitatively only.
+\end{itemize}
+
+All experiments were conducted on an Apple M3 laptop processor, demonstrating the viability of Green AI~\cite{lapicque2025greenai} for medical diagnostics. The principal contributions are:
+
+\begin{enumerate}
+    \item A systematic benchmark comparing sixteen approaches, fourteen of which produced reported results, organized into clearly delineated evaluation groups so that results obtained under incompatible test protocols are never directly cross-compared.
+    \item A \textit{Clever Hans} hypothesis for the phenomenological Physics-Informed model (Approach~10, McSharry): the model attains a high in-distribution validation AUROC of 0.8273 on the CODE-15\% set, yet its test cohort consists exclusively of SaMi-Trop recordings (a single, all-positive class), on which AUROC is mathematically undefined. We argue that the gap between strong in-distribution ranking and an entirely out-of-distribution, single-class test set is consistent with the model having memorized recording-specific artifacts rather than disease-relevant physiology; a measured out-of-distribution sensitivity is not asserted, as no evaluation cell in the source notebook produces it.
+    \item Demonstration that radical biophysical dimensionality reduction (3 Aliev-Panfilov parameters) provides more robust classification than rich phenomenological parametrization (17 McSharry parameters), establishing a design principle for medical Gray-Box AI systems.
+\end{enumerate}
+
+\section{Thesis Structure}
+
+The remainder of this thesis is organized as follows:
+
+\begin{description}
+    \item[Chapter~\ref{chap:sota}: State of the Art] surveys traditional and deep learning approaches to ECG classification, critical challenges (class imbalance, domain shift, interpretability), and emerging research directions including generative augmentation, physics-informed methods, self-supervised learning, and ECG foundation models, situating the methods used in this thesis within the wider literature.
+
+    \item[Chapter~\ref{chap:research}: Research] presents the experimental setup, the methods of all sixteen approaches (grouped by phase: baseline classifiers, generative augmentation, physics-informed models, phenomenological autoencoding, and foundation-model / self-supervised transfer learning, plus two incomplete experiments), defines the three evaluation groups and their incompatible scoring formulas, and reports the quantitative results for the fourteen completed approaches, organized by evaluation group with bootstrap confidence intervals where available.
+
+    \item[Chapter~\ref{chap:conclusions}: Conclusions] interprets the findings---foregrounding the relationship between in-distribution AUROC and out-of-distribution screening sensitivity, the two distinct failure modes of interpretable models, and the physics-versus-phenomenology trade-off---then summarizes the key contributions, discusses limitations, and outlines directions for future research.
+\end{description}
+
+
+\section{Research Objectives, Questions, and Hypotheses}
+\label{sec:objectives}
+
+The primary objective of this thesis is to develop a resource-efficient and explainable automated system for Chagas disease detection from 12-lead ECG signals, addressing current performance ceilings and the domain-shift challenges that affect deployment in endemic populations. To make this aim falsifiable, the main objective is decomposed into four specific objectives, each paired with the research question (RQ) and testable hypothesis it operationalizes.
+
+\begin{description}
+    \item[Objective~1 --- Generative augmentation of an imbalanced corpus.]
+    Address class imbalance and data scarcity by employing generative models---specifically Denoising Diffusion Probabilistic Models~\cite{ho2020denoising} and Latent Diffusion Models~\cite{rombach2022highresolution}---to synthesize realistic Chagas-positive ECG signals and quantify their effect on classifier training.
+
+    \textit{RQ1:} Can generative models improve Chagas disease classification by augmenting the severely imbalanced training data with synthetic ECG signals?
+
+    \textit{Hypothesis:} Conditional diffusion models can generate physiologically plausible Chagas-positive ECGs that, when added to the training set, improve minority-class recall (AUPRC) without degrading overall discriminative performance (AUROC).
+
+    \item[Objective~2 --- Physics-informed modelling and generalization.]
+    Enhance generalization across patient populations and recording devices by incorporating electrophysiological domain knowledge through Physics-Informed Neural Networks (PINNs), and characterize how the complexity of the embedded physical parametrization affects robustness to domain shift.
+
+    \textit{RQ2:} Does incorporating electrophysiological constraints through PINNs improve model interpretability and generalization compared with purely data-driven approaches?
+
+    \textit{Hypothesis (RQ2):} Constraining a neural network to extract parameters of a cardiac electrodynamics model (Aliev-Panfilov reaction-diffusion equations) forces the learned representation to capture disease-relevant physiological features, yielding an interpretable ``Gray-Box'' classifier that generalizes better than black-box alternatives.
+
+    \textit{RQ3:} What is the relationship between the complexity of the physical parametrization and robustness to domain shift across different patient populations and recording equipment?
+
+    \textit{Hypothesis (RQ3):} A highly reduced biophysical parametrization (few parameters grounded in first-principles physics) provides stronger regularization against overfitting to domain-specific artifacts than a richer phenomenological parametrization, despite the latter's greater expressiveness.
+
+    \item[Objective~3 --- Resource-efficient (Green AI) methodology.]
+    Establish a Green AI methodology suitable for deployment in resource-constrained endemic regions: all experiments are conducted on a single consumer-grade Apple~M3 laptop, and architectures are constrained to remain trainable and deployable on such hardware while remaining competitive with the heavy-AI Challenge baselines.
+
+    \textit{RQ4:} How does self-supervised transfer learning from large ECG foundation models compare with physics-informed modelling, both in in-distribution discriminative performance and in robustness to out-of-distribution patient populations, when both families are trained under the same Green AI hardware budget?
+
+    \textit{Hypothesis:} Foundation-model and self-supervised approaches (DeepECG-SSL fine-tuning and its hybrids) attain the highest in-distribution discriminative performance, but this advantage does not necessarily translate into superior out-of-distribution sensitivity, where physics-informed and phenomenological models may behave differently.
+
+    \item[Objective~4 --- Explainability and clinically meaningful evaluation.]
+    Improve model explainability by using biophysical and phenomenological parametrizations as interpretable gray-box classifiers, and assess whether standard threshold-independent discriminative metrics are sufficient indicators of clinical utility.
+
+    \textit{RQ5:} Does threshold-independent discriminative performance, as measured by AUROC, rank models correctly for the real clinical out-of-distribution screening task?
+
+    \textit{Hypothesis:} AUROC measured on a held-out in-distribution test set does not reliably predict out-of-distribution screening sensitivity; a model can attain the highest in-distribution AUROC while exhibiting the worst sensitivity on an unseen patient cohort, motivating evaluation criteria better aligned with clinical deployment.
+\end{description}
